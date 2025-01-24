@@ -1,23 +1,47 @@
-const form = document.getElementById('transaction-form');
+const form = document.getElementById('invoice-form');
 
 form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     const data = {
-        date: document.getElementById('date').value,
-        description: document.getElementById('description').value,
-        amount: document.getElementById('amount').value,
-        gst: document.getElementById('gst').value,
+        invoiceNo: document.getElementById('invoice-no').value,
+        invoiceDate: document.getElementById('invoice-date').value,
+        gstNo: document.getElementById('gst-no').value,
+        partyName: document.getElementById('party-name').value,
+        rate: parseFloat(document.getElementById('rate').value),
+        taxableValue: parseFloat(document.getElementById('taxable-value').value),
+        cgst: parseFloat(document.getElementById('cgst').value),
+        sgst: parseFloat(document.getElementById('sgst').value),
+        totalValue: parseFloat(document.getElementById('taxable-value').value) +
+                    parseFloat(document.getElementById('cgst').value) +
+                    parseFloat(document.getElementById('sgst').value),
     };
 
-    const response = await fetch('http://127.0.0.1:5000/api/transaction', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    });
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/generate-invoice', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
 
-    const result = await response.json();
-    console.log(result);
+        if (!response.ok) {
+            console.error('Failed to fetch PDF:', response.statusText);
+            alert('Failed to generate the invoice. Please check the console for more details.');
+            return;
+        }
+
+        const result = await response.blob();
+
+        const url = window.URL.createObjectURL(result);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Invoice.pdf';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error generating invoice:', error);
+        alert('An unexpected error occurred. Please check the console for details.');
+    }
 });
